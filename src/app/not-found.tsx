@@ -16,7 +16,8 @@ export default function NotFound() {
         <p className="text-xl text-gray-600 mb-8">Oops! Page not found</p>
         <div className="max-w-md text-center mb-8">
           <p className="text-gray-500">
-            The page you're looking for doesn't exist or has been moved.
+            The page you&apos;re looking for doesn&apos;t exist or has been
+            moved.{" "}
           </p>
         </div>
         <Link href="/">
@@ -24,7 +25,7 @@ export default function NotFound() {
         </Link>
       </main>
       <footer className="py-6 text-center text-sm text-gray-500 border-t">
-        © 2023 SimpleInvoice. All rights reserved.
+        © 2024 SimpleInvoice. All rights reserved.
       </footer>
     </div>
   );

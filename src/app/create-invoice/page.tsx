@@ -21,8 +21,7 @@ import { FileText, ArrowLeft, FileDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { auth, createInvoice } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 
 export default function CreateInvoice() {
@@ -69,14 +68,13 @@ export default function CreateInvoice() {
         return;
       }
 
-      const invoiceRef = await addDoc(collection(db, "invoices"), {
+      const newInvoice = {
         ...invoiceData,
         amount: parseFloat(invoiceData.amount),
-        userId: user.uid,
-        status: "Pending",
-        createdAt: serverTimestamp(),
-      });
+        status: "pending",
+      };
 
+      await createInvoice(newInvoice, user.uid);
       setSuccess("Invoice created successfully!");
       setTimeout(() => router.push("/dashboard"), 2000);
     } catch (error) {

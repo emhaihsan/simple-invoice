@@ -1,5 +1,5 @@
 "use client";
-import { SetStateAction, useEffect, useState } from "react";
+import { SetStateAction, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   auth,
@@ -39,6 +39,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  clientName: string;
+  amount: number;
+  status: string;
+}
+
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [invoices, setInvoices] = useState([]);
@@ -63,38 +71,19 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        router.push("/auth/signin");
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
-
-  useEffect(() => {
-    if (user) {
-      fetchInvoices();
-      fetchStats();
-    }
-  }, [user]);
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     if (user) {
       const recentInvoices = await getRecentInvoices(user.uid);
       setInvoices(recentInvoices as SetStateAction<never[]>);
     }
-  };
+  }, [user]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (user) {
       const invoiceStats = await getInvoiceStats(user.uid);
       setStats(invoiceStats);
     }
-  };
-  if (!user) return <div>Loading...</div>;
+  }, [user]);
 
   const handleDownloadPDF = async (invoiceId: string) => {
     try {
@@ -103,6 +92,20 @@ export default function Dashboard() {
       console.error("Error generating PDF:", error);
     }
   };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        fetchInvoices();
+        fetchStats();
+      } else {
+        router.push("/auth/signin");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router, fetchInvoices, fetchStats]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -229,7 +232,7 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice: any) => (
+                {invoices.map((invoice: Invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell>{invoice.invoiceNumber}</TableCell>
                     <TableCell>{invoice.clientName}</TableCell>

@@ -2,8 +2,21 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { collection, query, orderBy, limit, getDocs , where, doc, updateDoc, getDoc} from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs , where, doc, updateDoc, getDoc, addDoc} from "firebase/firestore";
 import {generateInvoicePDF} from './pdfGenerator';
+
+interface InvoiceData {
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  clientName: string;
+  clientEmail: string;
+  description: string;
+  amount: number;
+  currency: string;
+  paymentTerms: string;
+  status: string;
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -79,33 +92,31 @@ export const updateInvoiceStatus = async (invoiceId: string, newStatus: string) 
   });
 };
 
-function isInvoiceData(data: any): data is InvoiceData {
+function isInvoiceData(data: unknown): data is InvoiceData {
   return (
-    data &&
-    typeof data.invoiceNumber === 'string' &&
-    typeof data.date === 'string' &&
-    typeof data.dueDate === 'string' &&
-    typeof data.clientName === 'string' &&
-    typeof data.clientEmail === 'string' &&
-    typeof data.description === 'string' &&
-    typeof data.amount === 'number' &&
-    typeof data.currency === 'string' &&
-    typeof data.paymentTerms === 'string' &&
-    typeof data.status === 'string'
+    typeof data === 'object' &&
+    data !== null && 
+    'invoiceNumber' in data && 
+    typeof (data as InvoiceData).invoiceNumber === 'string' &&
+    'date' in data && 
+    typeof (data as InvoiceData).date === 'string' &&
+    'dueDate' in data && 
+    typeof (data as InvoiceData).dueDate === 'string' &&
+    'clientName' in data && 
+    typeof (data as InvoiceData).clientName === 'string' &&
+    'clientEmail' in data && 
+    typeof (data as InvoiceData).clientEmail === 'string' &&
+    'description' in data && 
+    typeof (data as InvoiceData).description === 'string' &&
+    'amount' in data && 
+    typeof (data as InvoiceData).amount === 'number' &&
+    'currency' in data && 
+    typeof (data as InvoiceData).currency === 'string' &&
+    'paymentTerms' in data && 
+    typeof (data as InvoiceData).paymentTerms === 'string' &&
+    'status' in data && 
+    typeof (data as InvoiceData).status === 'string'
   );
-}
-
-interface InvoiceData {
-  invoiceNumber: string;
-  date: string;
-  dueDate: string;
-  clientName: string;
-  clientEmail: string;
-  description: string;
-  amount: number;
-  currency: string;
-  paymentTerms: string;
-  status: string;
 }
 
 export const generateAndDownloadInvoicePDF = async (invoiceId: string) => {
@@ -125,3 +136,19 @@ export const generateAndDownloadInvoicePDF = async (invoiceId: string) => {
   }
 };
 
+export const createInvoice = async (invoiceData: InvoiceData, userId: string) => {
+  try {
+    const invoicesRef = collection(db, "invoices");
+    const newInvoiceData = {
+      ...invoiceData,
+      userId,
+      createdAt: new Date(),
+      status: "Pending"
+    };
+    const docRef = await addDoc(invoicesRef, newInvoiceData);
+    return docRef.id;
+  } catch (error) {
+    console.error("Error creating invoice:", error);
+    throw error;
+  }
+};
